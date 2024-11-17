@@ -1,4 +1,5 @@
 import { Telegraf } from "telegraf";
+import { message } from "telegraf/filters";
 import dotenv from "dotenv";
 import axios from "axios";
 import fs from "fs";
@@ -50,7 +51,7 @@ async function processThumbnails(response) {
     const svgText = `<svg width="${thumbSize}" height="25">
     <text x="2%" y="50%" font-size="24" text-anchor="left" fill="white" dy=".3em">${index + 1}</text>
   </svg>`;
-      const textBuffer = Buffer.from(svgText);
+    const textBuffer = Buffer.from(svgText);
 
     return { input: textBuffer, top: y, left: x };
   });
@@ -93,7 +94,7 @@ bot.command("credits", async (ctx) => {
   ctx.replyWithMarkdownV2("***Developed by @finnleyfox***\n\nCobalt Fox is powered by Cobalt\\. Cobalt is a free and open source project that allows you to download videos from various platforms\\. You can find the source code on [GitHub](https://github\\.com/imputnet/cobalt)\\.");
 });
 
-bot.on("message", async (ctx) => {
+bot.on(message("text"), async (ctx) => {
   const text = ctx.message.text;
   const link = text.split(" ")[0];
 
@@ -147,7 +148,7 @@ bot.on("message", async (ctx) => {
   }).catch((err) => {
     return err.response;
   });
-    
+
   if (resCobalt.status !== 200) {
     ctx.reply(`❌ Cobalt couldn't resolve the URL. Please make sure that the URL is supported.\n\nError Code: ${JSON.stringify(resCobalt.data.error.code)}`);
     return;
@@ -243,6 +244,47 @@ bot.on("message", async (ctx) => {
     */
   }
 
+});
+
+// download the sticker and send it as a photo
+bot.on(message("sticker"), async (ctx) => {
+  await ctx.reply("🔍 Analysis...")
+  try {
+    const sticker = ctx.message.sticker;
+
+    const stickerFileId = sticker.file_id;
+    const fp = path.resolve("downloads", stickerFileId + ".webp");
+
+    const stickerFile = await ctx.telegram.getFileLink(stickerFileId);
+
+    const mediaStream = await axios.get(stickerFile.href, {
+      responseType: "stream",
+    });
+
+    const writer = fs.createWriteStream(fp);
+    mediaStream.data.pipe(writer);
+
+    await new Promise((resolve, reject) => {
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+    });
+
+    // convert to transparent png with sharp
+    const pngFp = path.resolve("downloads", stickerFileId + ".png");
+    await sharp(fp).toFormat("png").toFile(pngFp);
+
+    await ctx.replyWithDocument({ source: pngFp });
+
+  } catch (err) {
+    ctx.reply("❌ There was an error while processing the sticker. Please try again later.");
+    console.error(err);
+  }
+
+  try {
+    fs.unlinkSync(fp);
+    fs.unlinkSync(pngFp);
+  }
+  catch { } // can't unlink if nothing exists kekw
 });
 
 bot.launch();
