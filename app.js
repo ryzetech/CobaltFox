@@ -249,13 +249,20 @@ bot.on(message("text"), async (ctx) => {
 // download the sticker and send it as a photo
 bot.on(message("sticker"), async (ctx) => {
   await ctx.reply("🔍 Analysis...")
+  let fp;
+
   try {
     const sticker = ctx.message.sticker;
 
     const stickerFileId = sticker.file_id;
-    const fp = path.resolve("downloads", stickerFileId + ".webp");
-
     const stickerFile = await ctx.telegram.getFileLink(stickerFileId);
+    const extension = stickerFile.href.split('.').pop();
+    fp = path.resolve("downloads", stickerFileId + "." + extension);
+
+    if (sticker.is_animated) {
+      await ctx.reply("❌ Animated stickers are not supported.");
+      return;
+    }
 
     const mediaStream = await axios.get(stickerFile.href, {
       responseType: "stream",
@@ -269,11 +276,13 @@ bot.on(message("sticker"), async (ctx) => {
       writer.on('error', reject);
     });
 
-    // convert to transparent png with sharp
-    const pngFp = path.resolve("downloads", stickerFileId + ".png");
-    await sharp(fp).toFormat("png").toFile(pngFp);
-
-    await ctx.replyWithDocument({ source: pngFp });
+    if (sticker.is_video) {
+      await ctx.replyWithDocument({ source: fp });
+    } else {
+      const pngFp = path.resolve("downloads", stickerFileId + ".png");
+      await sharp(fp).toFormat("png").toFile(pngFp);
+      await ctx.replyWithDocument({ source: pngFp });
+    }
 
   } catch (err) {
     ctx.reply("❌ There was an error while processing the sticker. Please try again later.");
