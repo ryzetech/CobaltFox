@@ -155,6 +155,9 @@ bot.on(message("text"), async (ctx) => {
       case "error.api.fetch.empty":
         currentStatus += "\n❌ Cobalt was able to resolve the URL, but the response from the server was empty. I'm sorry.";
         break;
+      case "error.api.youtube.login":
+        currentStatus += "\n❌ Cobalt was able to resolve the URL, but YouTube currently blocks automated requests. An update is likely to fix this soon.";
+        break;
       default:    
         currentStatus += `\n❌ Cobalt couldn't resolve the URL. Please make sure that the URL is supported.\n\nError Code: ${JSON.stringify(resCobalt.data.error.code)}`;
         break;
