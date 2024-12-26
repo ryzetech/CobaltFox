@@ -177,7 +177,6 @@ bot.on(message("text"), async (ctx) => {
   if (data.status === "tunnel" || data.status === "redirect") {
 
     try {
-      // ctx.reply("🔽 Download in progress...");
       currentStatus += "\n🔽 Download in progress...";
       await ctx.editMessageText(currentStatus, { chat_id: currentStatusMessage.chat.id, message_id: currentStatusMessage.message_id });
 
@@ -192,7 +191,7 @@ bot.on(message("text"), async (ctx) => {
       const fileSize = parseInt(mediaStream.headers['content-length'], 10);
 
       if (fileSize > 50 * 1024 * 1024) {
-        currentStatus += "\n✅ Download complete! Here is the download link: " + data.url + ".\n⚠Please note that the link will expire within a few minutes.";
+        currentStatus += "\n✅ Download complete! Here is the download link: " + data.url + ".\n⚠Please note that the link will expire within a few minutes.\n\n⏱ Took " + (Date.now()/1000 - ctx.message.date).toFixed(2) + "s";
         await ctx.editMessageText(currentStatus, { chat_id: currentStatusMessage.chat.id, message_id: currentStatusMessage.message_id });
         return;
       }
@@ -227,7 +226,7 @@ bot.on(message("text"), async (ctx) => {
             }
           }
         );
-        currentStatus += "\n✅ Download complete! Here is the download link: " + response.data + ".\n⚠ Please note that the link will expire within one hour.";
+        currentStatus += "\n✅ Download complete! Here is the download link: " + response.data + ".\n⚠ Please note that the link will expire within one hour.\n\n⏱ Took " + (Date.now()/1000 - ctx.message.date).toFixed(2) + "s";
         await ctx.editMessageText(currentStatus, { chat_id: currentStatusMessage.chat.id, message_id: currentStatusMessage.message_id });
 
       } else {
@@ -238,6 +237,9 @@ bot.on(message("text"), async (ctx) => {
           await ctx.replyWithPhoto({ source: fp });
 
         await ctx.replyWithDocument({ source: fp });
+
+        currentStatus += "\n\n⏱ Took " + (Date.now()/1000 - ctx.message.date).toFixed(2) + "s";
+        await ctx.editMessageText(currentStatus, { chat_id: currentStatusMessage.chat.id, message_id: currentStatusMessage.message_id });
       }
     } catch (err) {
       if (err.response.error_code === 413) {
