@@ -104,7 +104,8 @@ bot.on(message("text"), async (ctx) => {
     return;
   }
 
-  ctx.reply("🔍 Resolving the URL...");
+  let currentStatus = "🔍 Resolving the URL...";
+  let currentStatusMessage = await ctx.reply(currentStatus);
 
   // get the params
   let params = text.split(" ");
@@ -152,12 +153,13 @@ bot.on(message("text"), async (ctx) => {
   if (resCobalt.status !== 200) {
     switch (resCobalt.data.error.code) {
       case "error.api.fetch.empty":
-        ctx.reply("❌ Cobalt was able to resolve the URL, but the response from the server was empty. I'm sorry.");
+        currentStatus += "\n❌ Cobalt was able to resolve the URL, but the response from the server was empty. I'm sorry.";
         break;
       default:    
-        ctx.reply(`❌ Cobalt couldn't resolve the URL. Please make sure that the URL is supported.\n\nError Code: ${JSON.stringify(resCobalt.data.error.code)}`);
+        currentStatus += `\n❌ Cobalt couldn't resolve the URL. Please make sure that the URL is supported.\n\nError Code: ${JSON.stringify(resCobalt.data.error.code)}`;
         break;
     }
+    await ctx.editMessageText(currentStatus, { chat_id: currentStatusMessage.chat.id, message_id: currentStatusMessage.message_id });
     return;
   }
 
@@ -165,7 +167,8 @@ bot.on(message("text"), async (ctx) => {
 
   if (data.status === "error") {
     console.error(data);
-    ctx.reply("❌ There was an error while processing the video. Please try again later.");
+    currentStatus += "\n❌ There was an error while processing the video. Please try again later.";
+    await ctx.editMessageText(currentStatus, { chat_id: currentStatusMessage.chat.id, message_id: currentStatusMessage.message_id });
     return;
   }
 
@@ -174,7 +177,9 @@ bot.on(message("text"), async (ctx) => {
   if (data.status === "tunnel" || data.status === "redirect") {
 
     try {
-      ctx.reply("🔽 Download in progress...");
+      // ctx.reply("🔽 Download in progress...");
+      currentStatus += "\n🔽 Download in progress...";
+      await ctx.editMessageText(currentStatus, { chat_id: currentStatusMessage.chat.id, message_id: currentStatusMessage.message_id });
 
       if (!fs.existsSync("downloads")) fs.mkdirSync("downloads");
 
@@ -187,8 +192,8 @@ bot.on(message("text"), async (ctx) => {
       const fileSize = parseInt(mediaStream.headers['content-length'], 10);
 
       if (fileSize > 50 * 1024 * 1024) {
-        ctx.reply("⚠ The file exceeds 50mb and cannot be downloaded. A link will be provided instead. Please note that the link will expire within a few minutes.");
-        ctx.reply("✅ Resolve complete! Here is the download link: " + data.url);
+        currentStatus += "\n✅ Download complete! Here is the download link: " + data.url + ".\n⚠Please note that the link will expire within a few minutes.";
+        await ctx.editMessageText(currentStatus, { chat_id: currentStatusMessage.chat.id, message_id: currentStatusMessage.message_id });
         return;
       }
 
@@ -201,7 +206,8 @@ bot.on(message("text"), async (ctx) => {
       });
 
       if (fs.statSync(fp).size > 50 * 1024 * 1024) {
-        ctx.reply("⚠ The file is larger than 50mb and is being uploaded to zip.finnley.dev...");
+        currentStatus += "\n⚠ The file is larger than 50mb and is being uploaded to zip.finnley.dev...";
+        await ctx.editMessageText(currentStatus, { chat_id: currentStatusMessage.chat.id, message_id: currentStatusMessage.message_id });
         const form = new FormData();
         form.append('file', fs.readFileSync(fp), fp);
 
@@ -221,10 +227,12 @@ bot.on(message("text"), async (ctx) => {
             }
           }
         );
-        ctx.reply("✅ Download complete! Here is the download link: " + response.data + ".\nPlease note that the link will expire within one hour.");
+        currentStatus += "\n✅ Download complete! Here is the download link: " + response.data + ".\n⚠ Please note that the link will expire within one hour.";
+        await ctx.editMessageText(currentStatus, { chat_id: currentStatusMessage.chat.id, message_id: currentStatusMessage.message_id });
 
       } else {
-        ctx.reply("✅ Download complete! Sending...");
+        currentStatus += "\n✅ Download complete! Sending...";
+        await ctx.editMessageText(currentStatus, { chat_id: currentStatusMessage.chat.id, message_id: currentStatusMessage.message_id });
 
         if (data.type == "photo" || data.filename.endsWith(".jpg") || data.filename.endsWith(".png") || data.filename.endsWith(".jpeg") || data.filename.endsWith(".webp"))
           await ctx.replyWithPhoto({ source: fp });
@@ -244,7 +252,9 @@ bot.on(message("text"), async (ctx) => {
     }
   }
   else if (data.status === "picker") {
-    ctx.reply("❌ I was able to resolve the URL, but there are multiple choices. This isn't supported yet. Please try again later.");
+    currentStatus += "\n❌ I was able to resolve the URL, but there are multiple choices. This isn't supported yet. Please try again later.";
+    await ctx.editMessageText(currentStatus, { chat_id: currentStatusMessage.chat.id, message_id: currentStatusMessage.message_id });
+
     // FIXME: PLEASE IMPLEMENT THIS
     /*
     const previewPath = await processThumbnails(data);
@@ -256,7 +266,6 @@ bot.on(message("text"), async (ctx) => {
 
 // download the sticker and send it as a photo
 bot.on(message("sticker"), async (ctx) => {
-  await ctx.reply("🔍 Analysis...")
   let fp;
 
   try {
