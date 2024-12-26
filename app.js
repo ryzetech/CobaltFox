@@ -150,7 +150,14 @@ bot.on(message("text"), async (ctx) => {
   });
 
   if (resCobalt.status !== 200) {
-    ctx.reply(`❌ Cobalt couldn't resolve the URL. Please make sure that the URL is supported.\n\nError Code: ${JSON.stringify(resCobalt.data.error.code)}`);
+    switch (resCobalt.data.error.code) {
+      case "error.api.fetch.empty":
+        ctx.reply("❌ Cobalt was able to resolve the URL, but the response from the server was empty. I'm sorry.");
+        break;
+      default:    
+        ctx.reply(`❌ Cobalt couldn't resolve the URL. Please make sure that the URL is supported.\n\nError Code: ${JSON.stringify(resCobalt.data.error.code)}`);
+        break;
+    }
     return;
   }
 
@@ -221,6 +228,7 @@ bot.on(message("text"), async (ctx) => {
 
         if (data.type == "photo" || data.filename.endsWith(".jpg") || data.filename.endsWith(".png") || data.filename.endsWith(".jpeg") || data.filename.endsWith(".webp"))
           await ctx.replyWithPhoto({ source: fp });
+
         await ctx.replyWithDocument({ source: fp });
       }
     } catch (err) {
