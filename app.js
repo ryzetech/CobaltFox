@@ -248,7 +248,7 @@ bot.on(message("text"), async (ctx) => {
       if (err.response.error_code === 413) {
         ctx.reply("❌ The file exceeds 50mb and is too large to send due to Telegrams API restrictions. I'm sorry.");
       } else {
-        ctx.reply("❌ There was an error while processing the link. Please try again later.");
+        ctx.reply("❌ There was an error while processing the link. You can download the file manually here: " + data.url);
         console.error(err);
       }
     } finally {
